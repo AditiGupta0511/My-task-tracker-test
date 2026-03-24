@@ -67,11 +67,11 @@
     </div>
 
 <script type="module">
-  // 1. We use the "Cloud Links" (CDN) to get Firebase features
+  // 1. IMPORT (Only once!)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
   import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-  // 2. Your specific Firebase Config
+  // 2. CONFIG
   const firebaseConfig = {
     apiKey: "AIzaSyB8BsxVjjp9P6OGZlvgzLBlHQzZV2PLbqo",
     authDomain: "my-tracker-app-4d895.firebaseapp.com",
@@ -82,11 +82,11 @@
     measurementId: "G-2BEDHY0Z26"
   };
 
-  // 3. Initialize Firebase once
+  // 3. INITIALIZE (Only once!)
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // 4. Load Tasks from the Cloud when page starts
+  // 4. LOAD SAVED TASKS
   window.onload = async function() {
     try {
       const q = query(collection(db, "tasks"));
@@ -95,14 +95,14 @@
           renderTask(document.data().text, document.id);
       });
     } catch (e) {
-      console.error("Error loading tasks: ", e);
+      console.error("Load error:", e);
     }
   };
 
-  // 5. Add Task to Cloud
+  // 5. ADD TASK FUNCTION
   window.addTask = async function() {
-    let input = document.getElementById("taskInput");
-    if (input.value === "") return;
+    const input = document.getElementById("taskInput");
+    if (input.value.trim() === "") return;
 
     try {
       const docRef = await addDoc(collection(db, "tasks"), {
@@ -111,15 +111,15 @@
       renderTask(input.value, docRef.id);
       input.value = "";
     } catch (e) {
-      alert("Error adding task. Make sure Firestore 'Test Mode' is on!");
-      console.error("Error: ", e);
+      console.error("Add error:", e);
+      alert("Check your Firestore database 'Rules' tab—is it in Test Mode?");
     }
-  }
+  };
 
-  // 6. This function puts the HTML on the screen
+  // 6. RENDER FUNCTION
   function renderTask(text, id) {
-    let list = document.getElementById("taskList");
-    let listItem = document.createElement("li");
+    const list = document.getElementById("taskList");
+    const listItem = document.createElement("li");
     listItem.id = id; 
     listItem.innerHTML = `
         ${text} 
@@ -128,11 +128,15 @@
     list.appendChild(listItem);
   }
 
-  // 7. Delete Task from Cloud
+  // 7. DELETE FUNCTION
   window.deleteTask = async function(id) {
-    await deleteDoc(doc(db, "tasks", id));
-    document.getElementById(id).remove();
-  }
+    try {
+      await deleteDoc(doc(db, "tasks", id));
+      document.getElementById(id).remove();
+    } catch (e) {
+      console.error("Delete error:", e);
+    }
+  };
 </script>
 
 </body>
