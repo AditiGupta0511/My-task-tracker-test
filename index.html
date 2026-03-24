@@ -82,82 +82,78 @@
     measurementId: "G-2BEDHY0Z26"
   };
 
-  // 3. INITIALIZE (Only once!)
-  const app = initializeApp(firebaseConfig);
+const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // 4. LOAD SAVED TASKS
+  // 2. ATTACH TO WINDOW SO THE BUTTON SEES IT
+  window.addTask = async function() {
+      const input = document.getElementById("taskInput");
+      if (input.value.trim() === "") return;
+
+      try {
+          const docRef = await addDoc(collection(db, "tasks"), {
+              text: input.value,
+              completed: false,
+              createdAt: new Date().toLocaleString()
+          });
+          renderTask(input.value, docRef.id, false);
+          input.value = "";
+      } catch (e) {
+          console.error("Error: ", e);
+      }
+  };
+
+  // 3. ATTACH DELETE TO WINDOW TOO
+  window.deleteTask = async function(id) {
+      await deleteDoc(doc(db, "tasks", id));
+      document.getElementById(id).remove();
+  };
+
+  // 4. ATTACH TOGGLE TO WINDOW TOO
+  window.toggleTask = async function(id, currentStatus) {
+      const taskRef = doc(db, "tasks", id);
+      await updateDoc(taskRef, {
+          completed: !currentStatus
+      });
+      location.reload(); // Temporary way to show the change
+  };
+
+  // 5. LOADING AND RENDERING (Internal functions don't need window.)
   window.onload = async function() {
-    try {
       const q = query(collection(db, "tasks"));
       const querySnapshot = await getDocs(q);
       querySnapshot.forEach((document) => {
-          renderTask(document.data().text, document.id);
+          renderTask(document.data().text, document.id, document.data().completed);
       });
-    } catch (e) {
-      console.error("Load error:", e);
-    }
   };
 
-  // 5. ADD TASK FUNCTION
-// 1. Updated Add Function
-window.addTask = async function() {
-    const input = document.getElementById("taskInput");
-    if (input.value.trim() === "") return;
+  function renderTask(text, id, completed) {
+      const list = document.getElementById("taskList");
+      const listItem = document.createElement("li");
+      listItem.id = id;
+      const textStyle = completed ? "text-decoration: line-through; color: gray;" : "";
 
-    try {
-        const docRef = await addDoc(collection(db, "tasks"), {
-            text: input.value,
-            completed: false, // New property!
-            createdAt: new Date().toLocaleString() // New property!
-        });
-        renderTask(input.value, docRef.id, false);
-        input.value = "";
-    } catch (e) {
-        console.error("Error adding: ", e);
-    }
-};
-
-// 2. Updated Render Function (Now accepts "completed" status)
-function renderTask(text, id, completed) {
-    const list = document.getElementById("taskList");
-    const listItem = document.createElement("li");
-    listItem.id = id;
-    
-    // Use a ternary operator to add a 'strikethrough' if completed
-    const textStyle = completed ? "text-decoration: line-through; color: gray;" : "";
-
-    listItem.innerHTML = `
-        <div style="display: flex; align-items: center;">
-            <input type="checkbox" ${completed ? "checked" : ""} onclick="toggleTask('${id}', ${completed})">
-            <span style="margin-left: 10px; ${textStyle}">${text}</span>
-        </div>
-        <button class="delete-btn" onclick="deleteTask('${id}')">X</button>
-    `;
-    list.appendChild(listItem);
-}
-
-// 3. NEW: Toggle Function to update the Cloud
-import { updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-window.toggleTask = async function(id, currentStatus) {
-    const taskRef = doc(db, "tasks", id);
-    await updateDoc(taskRef, {
-        completed: !currentStatus // Flip the true/false value
-    });
-    location.reload(); // Refresh to show the strikethrough (we'll learn better ways later!)
-};
+      listItem.innerHTML = `
+          <div style="display: flex; align-items: center;">
+              <input type="checkbox" ${completed ? "checked" : ""} onclick="toggleTask('${id}', ${completed})">
+              <span style="margin-left: 10px; ${textStyle}">${text}</span>
+          </div>
+          <button class="delete-btn" onclick="deleteTask('${id}')">X</button>
+      `;
+      list.appendChild(listItem);
+  }
+</script> 
 
   // 6. DELETE FUNCTION
-  window.deleteTask = async function(id) {
-    try {
-      await deleteDoc(doc(db, "tasks", id));
-      document.getElementById(id).remove();
-    } catch (e) {
-      console.error("Delete error:", e);
-    }
-  };
-</script>
+  //window.deleteTask = async function(id) {
+    //try {
+      //await deleteDoc(doc(db, "tasks", id));
+      //document.getElementById(id).remove();
+    //} catch (e) {
+      //console.error("Delete error:", e);
+    //}
+  //};
+//</script>
 
 </body>
 </html>
