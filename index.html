@@ -67,67 +67,68 @@
     </div>
 
 <script type="module">
- import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
- import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  // 1. We use the "Cloud Links" (CDN) to get Firebase features
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-  // 2. PASTE YOUR CONFIG FROM FIREBASE HERE
-// Import the functions you need from the SDKs you need
-//import { initializeApp } from "firebase/app";
-//import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+  // 2. Your specific Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyB8BsxVjjp9P6OGZlvgzLBlHQzZV2PLbqo",
+    authDomain: "my-tracker-app-4d895.firebaseapp.com",
+    projectId: "my-tracker-app-4d895",
+    storageBucket: "my-tracker-app-4d895.firebasestorage.app",
+    messagingSenderId: "491846947470",
+    appId: "1:491846947470:web:c4ca892f40879d76d02fdf",
+    measurementId: "G-2BEDHY0Z26"
+  };
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyB8BsxVjjp9P6OGZlvgzLBlHQzZV2PLbqo",
-  authDomain: "my-tracker-app-4d895.firebaseapp.com",
-  projectId: "my-tracker-app-4d895",
-  storageBucket: "my-tracker-app-4d895.firebasestorage.app",
-  messagingSenderId: "491846947470",
-  appId: "1:491846947470:web:c4ca892f40879d76d02fdf",
-  measurementId: "G-2BEDHY0Z26"
-};
-
-
-
+  // 3. Initialize Firebase once
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // 3. Load Tasks from the Cloud when page starts
+  // 4. Load Tasks from the Cloud when page starts
   window.onload = async function() {
-    const q = query(collection(db, "tasks"));
-    const querySnapshot = await getDocs(q);
-    querySnapshot.forEach((document) => {
-        renderTask(document.data().text, document.id);
-    });
+    try {
+      const q = query(collection(db, "tasks"));
+      const querySnapshot = await getDocs(q);
+      querySnapshot.forEach((document) => {
+          renderTask(document.data().text, document.id);
+      });
+    } catch (e) {
+      console.error("Error loading tasks: ", e);
+    }
   };
 
-  // 4. Add Task to Cloud
+  // 5. Add Task to Cloud
   window.addTask = async function() {
     let input = document.getElementById("taskInput");
     if (input.value === "") return;
 
-    const docRef = await addDoc(collection(db, "tasks"), {
-      text: input.value
-    });
-
-    renderTask(input.value, docRef.id);
-    input.value = "";
+    try {
+      const docRef = await addDoc(collection(db, "tasks"), {
+        text: input.value
+      });
+      renderTask(input.value, docRef.id);
+      input.value = "";
+    } catch (e) {
+      alert("Error adding task. Make sure Firestore 'Test Mode' is on!");
+      console.error("Error: ", e);
+    }
   }
 
+  // 6. This function puts the HTML on the screen
   function renderTask(text, id) {
     let list = document.getElementById("taskList");
     let listItem = document.createElement("li");
-    listItem.id = id; // Give the list item the Cloud ID
+    listItem.id = id; 
     listItem.innerHTML = `
         ${text} 
-        <button onclick="deleteTask('${id}')">X</button>
+        <button class="delete-btn" onclick="deleteTask('${id}')">X</button>
     `;
     list.appendChild(listItem);
   }
 
-  // 5. Delete Task from Cloud
+  // 7. Delete Task from Cloud
   window.deleteTask = async function(id) {
     await deleteDoc(doc(db, "tasks", id));
     document.getElementById(id).remove();
