@@ -69,7 +69,7 @@
 <script type="module">
   // 1. IMPORT (Only once!)
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   // 2. CONFIG
   const firebaseConfig = {
@@ -100,35 +100,55 @@
   };
 
   // 5. ADD TASK FUNCTION
-  window.addTask = async function() {
+// 1. Updated Add Function
+window.addTask = async function() {
     const input = document.getElementById("taskInput");
     if (input.value.trim() === "") return;
 
     try {
-      const docRef = await addDoc(collection(db, "tasks"), {
-        text: input.value
-      });
-      renderTask(input.value, docRef.id);
-      input.value = "";
+        const docRef = await addDoc(collection(db, "tasks"), {
+            text: input.value,
+            completed: false, // New property!
+            createdAt: new Date().toLocaleString() // New property!
+        });
+        renderTask(input.value, docRef.id, false);
+        input.value = "";
     } catch (e) {
-      console.error("Add error:", e);
-      alert("Check your Firestore database 'Rules' tab—is it in Test Mode?");
+        console.error("Error adding: ", e);
     }
-  };
+};
 
-  // 6. RENDER FUNCTION
-  function renderTask(text, id) {
+// 2. Updated Render Function (Now accepts "completed" status)
+function renderTask(text, id, completed) {
     const list = document.getElementById("taskList");
     const listItem = document.createElement("li");
-    listItem.id = id; 
+    listItem.id = id;
+    
+    // Use a ternary operator to add a 'strikethrough' if completed
+    const textStyle = completed ? "text-decoration: line-through; color: gray;" : "";
+
     listItem.innerHTML = `
-        ${text} 
+        <div style="display: flex; align-items: center;">
+            <input type="checkbox" ${completed ? "checked" : ""} onclick="toggleTask('${id}', ${completed})">
+            <span style="margin-left: 10px; ${textStyle}">${text}</span>
+        </div>
         <button class="delete-btn" onclick="deleteTask('${id}')">X</button>
     `;
     list.appendChild(listItem);
-  }
+}
 
-  // 7. DELETE FUNCTION
+// 3. NEW: Toggle Function to update the Cloud
+import { updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+window.toggleTask = async function(id, currentStatus) {
+    const taskRef = doc(db, "tasks", id);
+    await updateDoc(taskRef, {
+        completed: !currentStatus // Flip the true/false value
+    });
+    location.reload(); // Refresh to show the strikethrough (we'll learn better ways later!)
+};
+
+  // 6. DELETE FUNCTION
   window.deleteTask = async function(id) {
     try {
       await deleteDoc(doc(db, "tasks", id));
