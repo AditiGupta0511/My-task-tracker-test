@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Modern Task Tracker</title>
+    <style>
+        /* This is the "Skin" (CSS) */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            padding-top: 50px;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 350px;
+        }
+
+        h1 { color: #333; text-align: center; }
+
+        input {
+            width: 70%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover { background-color: #27ae60; }
+
+        ul { list-style: none; padding: 0; margin-top: 20px; }
+
+        li {
+            background: #fff;
+            border-bottom: 1px solid #eee;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+.delete-btn { background: #e74c3c; padding: 2px 8px; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>My Tasks</h1>
+        
+        <input type="text" id="taskInput" placeholder="What needs doing?">
+        <button onclick="addTask()">Add</button>
+
+        <ul id="taskList">
+            </ul>
+    </div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  // 2. PASTE YOUR CONFIG FROM FIREBASE HERE
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyB8BsxVjjp9P6OGZlvgzLBlHQzZV2PLbqo",
+  authDomain: "my-tracker-app-4d895.firebaseapp.com",
+  projectId: "my-tracker-app-4d895",
+  storageBucket: "my-tracker-app-4d895.firebasestorage.app",
+  messagingSenderId: "491846947470",
+  appId: "1:491846947470:web:c4ca892f40879d76d02fdf",
+  measurementId: "G-2BEDHY0Z26"
+};
+
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // 3. Load Tasks from the Cloud when page starts
+  window.onload = async function() {
+    const q = query(collection(db, "tasks"));
+    const querySnapshot = await getDocs(q);
+    querySnapshot.forEach((document) => {
+        renderTask(document.data().text, document.id);
+    });
+  };
+
+  // 4. Add Task to Cloud
+  window.addTask = async function() {
+    let input = document.getElementById("taskInput");
+    if (input.value === "") return;
+
+    const docRef = await addDoc(collection(db, "tasks"), {
+      text: input.value
+    });
+
+    renderTask(input.value, docRef.id);
+    input.value = "";
+  }
+
+  function renderTask(text, id) {
+    let list = document.getElementById("taskList");
+    let listItem = document.createElement("li");
+    listItem.id = id; // Give the list item the Cloud ID
+    listItem.innerHTML = `
+        ${text} 
+        <button onclick="deleteTask('${id}')">X</button>
+    `;
+    list.appendChild(listItem);
+  }
+
+  // 5. Delete Task from Cloud
+  window.deleteTask = async function(id) {
+    await deleteDoc(doc(db, "tasks", id));
+    document.getElementById(id).remove();
+  }
+</script>
+
+</body>
+</html>
